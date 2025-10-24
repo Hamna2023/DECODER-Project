@@ -24,21 +24,42 @@ decoder.db
 *.log
 logs/
 
+# ---------------------------
 # Data files
-/data/raw/
+# ---------------------------
+
+# Raw and processed data
+data/
 data/raw/
-data/processed/*.csv
-data/processed/*.pkl
-data/processed/*.txt
+data/processed/
+*.csv
+*.pkl
+*.xlsx
+*.ods
+*.json
+*.parquet
 
-# Jupyter notebook checkpoints
+# Text datasets (e.g., BDG2 files)
+*.txt
+
+# ---------------------------
+# Jupyter / notebooks
+# ---------------------------
+
 .ipynb_checkpoints/
+*.ipynb
 
-# OS files
+# ---------------------------
+# OS / Editor specific
+# ---------------------------
+
 .DS_Store
 Thumbs.db
 
+# ---------------------------
 # Testing / coverage
+# ---------------------------
+
 htmlcov/
 .tox/
 .coverage
