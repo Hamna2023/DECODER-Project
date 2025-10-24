@@ -1,0 +1,46 @@
+# ---------------------------
+# Python / FastAPI Project
+# ---------------------------
+
+# Byte-compiled / cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+.env/
+.venv/
+
+# IDE settings
+.vscode/
+.idea/
+*.code-workspace
+
+# SQLite database
+decoder.db
+
+# Logs
+*.log
+logs/
+
+# Data files
+/data/raw/
+data/raw/
+data/processed/*.csv
+data/processed/*.pkl
+data/processed/*.txt
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Testing / coverage
+htmlcov/
+.tox/
+.coverage
+.cache/
+pytest_cache/
