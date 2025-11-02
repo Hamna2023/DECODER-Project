@@ -1,6 +1,5 @@
 # 🧠 Mini-DECODER Prototype  
 **MSc-Level Assignment — DECODER Project (Concordia University)**  
-Supervisor: *Professor Yann-Gaël Guéhéneuc*
 
 ---
 
@@ -29,7 +28,7 @@ The implementation uses **FastAPI**, **SQLite**, and **SQLAlchemy** for backend 
 
 ### **Architecture Diagram (Text Description)**
 
-![DECODER Architecture Diagram](Architecture diagram.png)
+![DECODER Architecture Diagram](https://github.com/Hamna2023/DECODER-Project/blob/main/Architecture%20diagram.png)
 
 ## ⚙️ Environment Setup
 
