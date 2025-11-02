@@ -1,25 +1,26 @@
-from fastapi import FastAPI, Depends, Query
+from fastapi import FastAPI, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
-from app.database import Base, engine, SessionLocal
-from app.models import SensorReading
 from datetime import datetime
+from typing import Optional
 from pydantic import BaseModel
 import pandas as pd
 
-# Create tables
+from app.database import Base, engine, SessionLocal
+from app.models import SensorData
+
+# Create all tables (ensures schema is synced)
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Mini-DECODER")
+app = FastAPI(title="Mini-DECODER API")
 
-# Pydantic model for input
+# ---------------------- SCHEMA ----------------------
 class SensorReadingIn(BaseModel):
     building_id: str
-    sensor_id: str
-    timestamp: datetime
+    meter_type: str
+    timestamp: Optional[datetime] = None
     value: float
 
-
-# Dependency to get DB session
+# ---------------------- DEPENDENCY ----------------------
 def get_db():
     db = SessionLocal()
     try:
@@ -27,62 +28,66 @@ def get_db():
     finally:
         db.close()
 
-
+# ---------------------- ROOT ----------------------
 @app.get("/")
 def root():
-    return {"message": "Welcome to Mini-DECODER!"}
+    return {"message": "Welcome to the Mini-DECODER API"}
 
-
-# POST /ingest
-@app.post("/ingest")
+# ---------------------- INGEST ----------------------
+@app.post("/ingest", status_code=201)
 def ingest_reading(reading: SensorReadingIn, db: Session = Depends(get_db)):
-    new_reading = SensorReading(
-        building_id=reading.building_id,
-        sensor_id=reading.sensor_id,
-        timestamp=reading.timestamp,
-        value=reading.value
-    )
-    db.add(new_reading)
-    db.commit()
-    db.refresh(new_reading)
-    return {"message": "Reading stored successfully!", "id": new_reading.id}
+    """Store a new sensor reading in the database."""
+    try:
+        timestamp = reading.timestamp or datetime.utcnow()
+        new_record = SensorData(
+            building_id=reading.building_id,
+            meter_type=reading.meter_type,
+            timestamp=timestamp,
+            value=reading.value
+        )
+        db.add(new_record)
+        db.commit()
+        db.refresh(new_record)
+        return {"message": "Reading stored successfully!", "id": new_record.id}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
-
-# GET /forecast
+# ---------------------- FORECAST ----------------------
 @app.get("/forecast/")
 def get_forecast(
-    building_id: str = Query(...),
-    sensor_id: str = Query(...),
+    building_id: str = Query(..., description="ID of the building"),
+    meter_type: str = Query(..., description="Type of meter (e.g. solar, electric)"),
+    horizon: int = Query(3, ge=1, le=24, description="Hours to forecast ahead"),
     db: Session = Depends(get_db)
 ):
-    # Get all readings for that building + sensor
-    readings = db.query(SensorReading).filter_by(
-        building_id=building_id,
-        sensor_id=sensor_id
-    ).order_by(SensorReading.timestamp).all()
+    """Generate a simple forecast based on recent readings."""
+    readings = (
+        db.query(SensorData)
+        .filter_by(building_id=building_id, meter_type=meter_type)
+        .order_by(SensorData.timestamp)
+        .all()
+    )
 
     if not readings:
-        return {"message": "No data found for given building/sensor."}
+        raise HTTPException(status_code=404, detail="No data found for given building/meter type")
 
     # Convert to DataFrame
-    df = pd.DataFrame([{
-        "timestamp": r.timestamp,
-        "value": r.value
-    } for r in readings])
+    df = pd.DataFrame([{"timestamp": r.timestamp, "value": r.value} for r in readings])
+    df = df.sort_values("timestamp").reset_index(drop=True)
 
-    # Simple moving average forecast (last 3 values)
-    last_values = df["value"].tail(3)
-    avg = last_values.mean()
-
-    # Simulate 3 future timestamps (1h apart)
+    # Simple moving average forecast
+    avg_value = df["value"].tail(3).mean()
     last_time = df["timestamp"].max()
-    future_times = [last_time + pd.Timedelta(hours=i) for i in range(1, 4)]
 
-    forecast_values = [avg] * 3  # same average repeated
+    future_times = [last_time + pd.Timedelta(hours=i) for i in range(1, horizon + 1)]
+    forecast_list = [
+        {"timestamp": str(future_times[i]), "predicted_value": float(avg_value)} for i in range(horizon)
+    ]
 
-    forecast_df = pd.DataFrame({
-        "timestamp": future_times,
-        "predicted_value": forecast_values
-    })
-
-    return forecast_df.to_dict(orient="records")
+    return {
+        "building_id": building_id,
+        "meter_type": meter_type,
+        "horizon_hours": horizon,
+        "forecast": forecast_list
+    }

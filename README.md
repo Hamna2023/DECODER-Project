@@ -29,3 +29,27 @@ The implementation uses **FastAPI**, **SQLite**, and **SQLAlchemy** for backend 
 
 ### **Architecture Diagram (Text Description)**
 
+![DECODER Architecture Diagram](Architecture diagram.png)
+
+## ⚙️ Environment Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/Hamna2023/DECODER-Project.git
+cd DECODER-Project
+
+# Create and activate virtual environment
+python3 -m venv venv
+source venv/bin/activate    # On macOS/Linux
+# .\venv\Scripts\activate   # On Windows
+
+# Install dependencies
+pip install -r requirements.txt
+
+# run backend
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+
+# run frontend
+streamlit run ui/decoder_ui.py
+
+
